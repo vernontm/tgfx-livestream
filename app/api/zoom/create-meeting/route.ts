@@ -34,9 +34,10 @@ export async function POST(req: NextRequest) {
     // Create instant meeting via Zoom API
     const zoomMeeting = await createInstantMeeting(title)
 
-    // Save to database
+    // Save to database with status 'live'
     if (supabase) {
-      const { error: dbError } = await supabase
+      console.log('Saving new meeting to database with status: live')
+      const { data: insertedMeeting, error: dbError } = await supabase
         .from('meetings')
         .insert({
           zoom_meeting_id: String(zoomMeeting.id),
@@ -45,10 +46,16 @@ export async function POST(req: NextRequest) {
           host_id: host_username,
           status: 'live'
         })
+        .select()
+        .single()
 
       if (dbError) {
         console.error('Error saving meeting to database:', dbError)
+      } else {
+        console.log('Meeting saved successfully:', insertedMeeting)
       }
+    } else {
+      console.log('Supabase not configured, skipping database save')
     }
 
     return NextResponse.json({
