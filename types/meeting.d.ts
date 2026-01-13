@@ -1,8 +1,8 @@
 export interface Meeting {
   id: string;
   zoom_meeting_id: string;
-  zoom_password?: string;
-  password?: string; // Alias for zoom_password for easier access
+  zoom_password?: string; // Database field name
+  password?: string; // Alias for compatibility
   title: string;
   description?: string;
   host_id: string;

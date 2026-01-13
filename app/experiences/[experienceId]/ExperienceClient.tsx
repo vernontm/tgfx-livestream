@@ -100,7 +100,8 @@ export default function ExperienceClient({ experienceId, user }: ExperienceClien
 
   const handleJoinLive = () => {
     if (liveMeeting) {
-      router.push(`/meeting/live?meetingNumber=${liveMeeting.zoom_meeting_id}&password=${liveMeeting.password || ''}&title=${encodeURIComponent(liveMeeting.title)}`)
+      const pwd = liveMeeting.zoom_password || liveMeeting.password || ''
+      router.push(`/meeting/live?meetingNumber=${liveMeeting.zoom_meeting_id}&password=${pwd}&title=${encodeURIComponent(liveMeeting.title)}`)
     }
   }
 
