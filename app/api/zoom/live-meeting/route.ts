@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getLiveMeetingFromZoom } from '@/lib/zoom-api'
+import { getLiveMeetingFromZoom, getMeetingStatus } from '@/lib/zoom-api'
 import { supabase } from '@/lib/supabase'
 
 export async function GET() {
@@ -8,7 +8,6 @@ export async function GET() {
     console.log('Supabase configured:', !!supabase)
     
     // First check database for meetings marked as live
-    // (This is more reliable than Zoom API which only shows "started" meetings)
     if (supabase) {
       const { data: dbLiveMeeting, error: dbError } = await supabase
         .from('meetings')
@@ -25,16 +24,32 @@ export async function GET() {
       }
 
       if (dbLiveMeeting) {
-        console.log('Found live meeting in database:', dbLiveMeeting.zoom_meeting_id)
-        return NextResponse.json({
-          live: true,
-          meeting: {
-            id: dbLiveMeeting.id,
-            meetingNumber: dbLiveMeeting.zoom_meeting_id,
-            password: dbLiveMeeting.zoom_password || '',
-            title: dbLiveMeeting.title
-          }
-        })
+        // Verify the meeting is still valid on Zoom
+        const zoomStatus = await getMeetingStatus(dbLiveMeeting.zoom_meeting_id)
+        console.log('Zoom meeting status:', zoomStatus)
+        
+        // If meeting is ended or not found on Zoom, mark it as ended in DB
+        if (zoomStatus === 'ended' || zoomStatus === 'notfound') {
+          console.log('Meeting ended on Zoom, updating database...')
+          await supabase
+            .from('meetings')
+            .update({ status: 'ended' })
+            .eq('id', dbLiveMeeting.id)
+          
+          // Continue to check for other live meetings
+        } else {
+          // Meeting is valid (waiting or started)
+          console.log('Found valid live meeting in database:', dbLiveMeeting.zoom_meeting_id)
+          return NextResponse.json({
+            live: true,
+            meeting: {
+              id: dbLiveMeeting.id,
+              meetingNumber: dbLiveMeeting.zoom_meeting_id,
+              password: dbLiveMeeting.zoom_password || '',
+              title: dbLiveMeeting.title
+            }
+          })
+        }
       }
     } else {
       console.log('Supabase not configured, skipping database check')
