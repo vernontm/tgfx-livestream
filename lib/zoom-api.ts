@@ -117,6 +117,62 @@ export async function endMeeting(meetingId: string): Promise<void> {
   }
 }
 
+export async function getMeetingStatus(meetingId: string): Promise<'waiting' | 'started' | 'ended' | 'notfound'> {
+  const accessToken = await getZoomAccessToken()
+
+  const response = await fetch(`https://api.zoom.us/v2/meetings/${meetingId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  if (response.status === 404) {
+    return 'notfound'
+  }
+
+  if (!response.ok) {
+    console.error('Failed to get meeting status')
+    return 'notfound'
+  }
+
+  const data = await response.json()
+  // Zoom meeting status: waiting, started
+  return data.status || 'waiting'
+}
+
+export async function getLiveMeetingFromZoom(): Promise<{ id: string; topic: string; password?: string } | null> {
+  const accessToken = await getZoomAccessToken()
+
+  const response = await fetch('https://api.zoom.us/v2/users/me/meetings?type=live', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  if (!response.ok) {
+    console.error('Failed to get live meetings from Zoom')
+    return null
+  }
+
+  const data = await response.json()
+  const liveMeetings = data.meetings || []
+
+  if (liveMeetings.length > 0) {
+    const meeting = liveMeetings[0]
+    return {
+      id: String(meeting.id),
+      topic: meeting.topic,
+      password: meeting.password
+    }
+  }
+
+  return null
+}
+
 export async function endAllLiveMeetings(): Promise<void> {
   const accessToken = await getZoomAccessToken()
 

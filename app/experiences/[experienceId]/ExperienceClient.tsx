@@ -35,14 +35,51 @@ export default function ExperienceClient({ experienceId, user }: ExperienceClien
   const [startingMeeting, setStartingMeeting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Check for live meetings
-  const liveMeeting = meetings.find(m => m.status === 'live')
+  // Live meeting state (fetched from Zoom API for accuracy)
+  const [liveMeeting, setLiveMeeting] = useState<{
+    meetingNumber: string
+    password: string
+    title: string
+  } | null>(null)
 
   useEffect(() => {
     const fetchMeetings = async () => {
       try {
         setLoading(true)
 
+        // For viewers, get live meeting directly from Zoom API
+        if (!user.isAdmin) {
+          const response = await fetch('/api/zoom/live-meeting')
+          const data = await response.json()
+          
+          if (data.live && data.meeting) {
+            setLiveMeeting({
+              meetingNumber: data.meeting.meetingNumber,
+              password: data.meeting.password || '',
+              title: data.meeting.title
+            })
+          } else {
+            setLiveMeeting(null)
+          }
+          setLoading(false)
+          return
+        }
+
+        // For admin, also check Zoom API for live meeting
+        const liveResponse = await fetch('/api/zoom/live-meeting')
+        const liveData = await liveResponse.json()
+        
+        if (liveData.live && liveData.meeting) {
+          setLiveMeeting({
+            meetingNumber: liveData.meeting.meetingNumber,
+            password: liveData.meeting.password || '',
+            title: liveData.meeting.title
+          })
+        } else {
+          setLiveMeeting(null)
+        }
+
+        // Also fetch from database for past meetings
         if (!supabase) {
           setMeetings([])
           setLoading(false)
@@ -100,8 +137,7 @@ export default function ExperienceClient({ experienceId, user }: ExperienceClien
 
   const handleJoinLive = () => {
     if (liveMeeting) {
-      const pwd = liveMeeting.zoom_password || liveMeeting.password || ''
-      router.push(`/meeting/live?meetingNumber=${liveMeeting.zoom_meeting_id}&password=${pwd}&title=${encodeURIComponent(liveMeeting.title)}`)
+      router.push(`/meeting/live?meetingNumber=${liveMeeting.meetingNumber}&password=${liveMeeting.password}&title=${encodeURIComponent(liveMeeting.title)}`)
     }
   }
 
@@ -277,7 +313,7 @@ export default function ExperienceClient({ experienceId, user }: ExperienceClien
                 <span className="text-white font-semibold">Currently Live: {liveMeeting.title}</span>
               </div>
               <Link
-                href={`/meeting/live?meetingNumber=${liveMeeting.zoom_meeting_id}&password=${liveMeeting.password || ''}&title=${encodeURIComponent(liveMeeting.title)}&host=1`}
+                href={`/meeting/live?meetingNumber=${liveMeeting.meetingNumber}&password=${liveMeeting.password}&title=${encodeURIComponent(liveMeeting.title)}&host=1`}
                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
               >
                 Rejoin Stream
