@@ -34,8 +34,10 @@ function LiveMeetingContent() {
     }
   }, [isHost, meetingNumber, password])
 
-  // Zoom web client URL for viewers (join, not start)
-  const zoomWebClientUrl = `https://zoom.us/wc/${meetingNumber}/join?pwd=${password}&prefer=1`
+  // Zoom web client URL for viewers (join as guest, not start)
+  // Using uname parameter to set a guest name so they don't need to log in
+  const guestName = encodeURIComponent('Viewer')
+  const zoomWebClientUrl = `https://zoom.us/wc/${meetingNumber}/join?pwd=${password}&prefer=1&un=${guestName}`
 
   const handleEndMeeting = async () => {
     if (confirm('Are you sure you want to end this meeting?')) {
