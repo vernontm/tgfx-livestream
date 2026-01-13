@@ -116,3 +116,35 @@ export async function endMeeting(meetingId: string): Promise<void> {
     throw new Error(`Failed to end Zoom meeting: ${error}`)
   }
 }
+
+export async function endAllLiveMeetings(): Promise<void> {
+  const accessToken = await getZoomAccessToken()
+
+  // Get all live meetings for the user
+  const response = await fetch('https://api.zoom.us/v2/users/me/meetings?type=live', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  if (!response.ok) {
+    console.error('Failed to get live meetings')
+    return
+  }
+
+  const data = await response.json()
+  const liveMeetings = data.meetings || []
+
+  console.log(`Found ${liveMeetings.length} live meetings to end`)
+
+  for (const meeting of liveMeetings) {
+    try {
+      await endMeeting(String(meeting.id))
+      console.log(`Ended meeting: ${meeting.id}`)
+    } catch (err) {
+      console.error(`Failed to end meeting ${meeting.id}:`, err)
+    }
+  }
+}

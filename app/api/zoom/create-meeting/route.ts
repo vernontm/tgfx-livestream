@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createInstantMeeting, endMeeting } from '@/lib/zoom-api'
+import { createInstantMeeting, endMeeting, endAllLiveMeetings } from '@/lib/zoom-api'
 import { supabase } from '@/lib/supabase'
 import { isAdmin, getDefaultMeetingTitle } from '@/lib/admin'
 
@@ -19,29 +19,16 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}))
     const title = body.title || getDefaultMeetingTitle()
 
-    // End any existing live meetings first
-    if (supabase) {
-      const { data: liveMeetings } = await supabase
-        .from('meetings')
-        .select('zoom_meeting_id')
-        .eq('status', 'live')
+    // End ALL live meetings from Zoom API first (not just database)
+    console.log('Ending all live meetings from Zoom...')
+    await endAllLiveMeetings()
 
-      if (liveMeetings && liveMeetings.length > 0) {
-        console.log(`Ending ${liveMeetings.length} existing live meetings...`)
-        for (const meeting of liveMeetings) {
-          try {
-            await endMeeting(meeting.zoom_meeting_id)
-          } catch (err) {
-            console.error('Error ending meeting:', meeting.zoom_meeting_id, err)
-          }
-        }
-        
-        // Mark all as ended in database
-        await supabase
-          .from('meetings')
-          .update({ status: 'ended' })
-          .eq('status', 'live')
-      }
+    // Also update database status
+    if (supabase) {
+      await supabase
+        .from('meetings')
+        .update({ status: 'ended' })
+        .eq('status', 'live')
     }
 
     // Create instant meeting via Zoom API
