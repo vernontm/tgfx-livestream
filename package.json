@@ -8,12 +8,18 @@
     "start": "next start"
   },
   "dependencies": {
-    "next": "16.1.1",
-    "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "@supabase/supabase-js": "^2.90.1",
+    "@whop-apps/sdk": "^0.0.1-canary.117",
+    "@whop/sdk": "^0.0.23",
+    "@zoom/meetingsdk": "^5.0.4",
+    "jsrsasign": "^11.1.0",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/jsrsasign": "^10.5.15",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

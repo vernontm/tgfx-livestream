@@ -1,0 +1,118 @@
+// Zoom API integration for creating instant meetings
+
+interface ZoomTokenResponse {
+  access_token: string
+  token_type: string
+  expires_in: number
+}
+
+interface ZoomMeetingResponse {
+  id: number
+  topic: string
+  password: string
+  join_url: string
+  start_url: string
+}
+
+let cachedToken: { token: string; expiresAt: number } | null = null
+
+async function getZoomAccessToken(): Promise<string> {
+  // Check if we have a valid cached token
+  if (cachedToken && cachedToken.expiresAt > Date.now()) {
+    return cachedToken.token
+  }
+
+  const accountId = process.env.ZOOM_ACCOUNT_ID
+  const clientId = process.env.ZOOM_CLIENT_ID
+  const clientSecret = process.env.ZOOM_CLIENT_SECRET
+
+  if (!accountId || !clientId || !clientSecret) {
+    throw new Error('Zoom API credentials not configured')
+  }
+
+  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
+
+  const response = await fetch(
+    `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${accountId}`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    }
+  )
+
+  if (!response.ok) {
+    const error = await response.text()
+    throw new Error(`Failed to get Zoom access token: ${error}`)
+  }
+
+  const data: ZoomTokenResponse = await response.json()
+  
+  // Cache the token (expire 5 minutes early to be safe)
+  cachedToken = {
+    token: data.access_token,
+    expiresAt: Date.now() + (data.expires_in - 300) * 1000
+  }
+
+  return data.access_token
+}
+
+export async function createInstantMeeting(topic: string): Promise<ZoomMeetingResponse> {
+  const accessToken = await getZoomAccessToken()
+
+  const response = await fetch('https://api.zoom.us/v2/users/me/meetings', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      topic,
+      type: 2, // Scheduled meeting (can be joined immediately)
+      start_time: new Date().toISOString(),
+      duration: 120, // 2 hours
+      timezone: 'UTC',
+      settings: {
+        host_video: true,
+        participant_video: true,
+        join_before_host: true, // Allow joining before host
+        mute_upon_entry: true,
+        waiting_room: false,
+        audio: 'both',
+        auto_recording: 'none'
+      }
+    })
+  })
+
+  if (!response.ok) {
+    const error = await response.text()
+    console.error('Zoom API error:', error)
+    throw new Error(`Failed to create Zoom meeting: ${error}`)
+  }
+
+  const meeting = await response.json()
+  console.log('Created meeting:', meeting.id, meeting.topic)
+  return meeting
+}
+
+export async function endMeeting(meetingId: string): Promise<void> {
+  const accessToken = await getZoomAccessToken()
+
+  const response = await fetch(`https://api.zoom.us/v2/meetings/${meetingId}/status`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      action: 'end'
+    })
+  })
+
+  if (!response.ok && response.status !== 404) {
+    const error = await response.text()
+    throw new Error(`Failed to end Zoom meeting: ${error}`)
+  }
+}
