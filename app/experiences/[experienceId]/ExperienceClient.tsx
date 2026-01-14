@@ -165,34 +165,33 @@ export default function ExperienceClient({ experienceId, user }: ExperienceClien
         </div>
 
         {/* Title */}
-        <h1 className="text-3xl font-bold mb-2" style={{ color: '#ffffff' }}>{STREAM_TITLE}</h1>
+        <h1 className="text-4xl md:text-5xl font-bold mb-3" style={{ color: '#ffffff' }}>{STREAM_TITLE}</h1>
         
         {/* Description */}
-        <p className="text-zinc-400 text-lg mb-6">
+        <p className="text-zinc-400 text-xl mb-8">
           The stream is live! Join now to watch.
         </p>
 
-        {/* Join button - using Frosted UI */}
-        <div className="flex justify-center mb-4">
-          <Button
+        {/* Join button */}
+        <div className="flex justify-center mb-6">
+          <button
             onClick={handleJoinLive}
-            size="lg"
-            className="px-8 py-4 text-white rounded-xl font-semibold text-lg flex items-center justify-center gap-3 transition-all duration-200 hover:scale-105"
+            className="px-10 py-4 text-white rounded-2xl font-bold text-xl flex items-center justify-center gap-3 transition-all duration-200 hover:scale-105 hover:brightness-110"
             style={{ 
               backgroundColor: '#5dc6ae',
-              boxShadow: '0 4px 20px rgba(93, 198, 174, 0.3)'
+              boxShadow: '0 6px 30px rgba(93, 198, 174, 0.4)'
             }}
           >
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
               <path d="M8 5v14l11-7z" />
             </svg>
             Join Livestream
-          </Button>
+          </button>
         </div>
 
         {/* Welcome message */}
-        <p className="text-zinc-500 text-sm">
-          Welcome, <span className="text-zinc-300">{user.username}</span>
+        <p className="text-zinc-400 text-base">
+          Welcome, <span className="text-white font-medium">{user.username}</span>
         </p>
       </div>
     </div>
