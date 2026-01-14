@@ -13,9 +13,16 @@ export default async function ExperiencePage({ params, searchParams }: PageProps
   const headersList = await headers()
   
   // Get user info from Whop headers (Whop sends these when embedding apps)
-  const userId = headersList.get('x-whop-user-id') || headersList.get('whop-user-id')
-  const whopUsername = headersList.get('x-whop-username') || headersList.get('whop-username')
-  const email = headersList.get('x-whop-user-email') || headersList.get('whop-user-email') || ''
+  // Log all headers for debugging
+  const allHeaders: Record<string, string> = {}
+  headersList.forEach((value, key) => {
+    allHeaders[key] = value
+  })
+  console.log('All headers:', JSON.stringify(allHeaders))
+  
+  const userId = headersList.get('x-whop-user-id') || headersList.get('whop-user-id') || headersList.get('x-whop-member-id')
+  const whopUsername = headersList.get('x-whop-username') || headersList.get('whop-username') || headersList.get('x-whop-user-username') || headersList.get('x-whop-member-username')
+  const email = headersList.get('x-whop-user-email') || headersList.get('whop-user-email') || headersList.get('x-whop-email') || ''
   
   // Use Whop username, or check for admin query param for testing
   const isAdminMode = query.admin === '1' || query.admin === 'true'

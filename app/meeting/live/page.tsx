@@ -66,14 +66,23 @@ function LiveMeetingContent() {
           throw new Error('Zoom SDK key not configured')
         }
 
-        // Initialize the SDK
+        // Initialize the SDK with viewer-only settings (no mic/video)
         ZoomMtg.init({
           leaveUrl: window.location.origin + '/experiences/test',
           patchJsMedia: true,
+          disablePreview: true,
+          disableJoinAudio: false,
+          disableCallOut: true,
+          disableRecord: true,
+          disableVoIP: true,
+          audioPanelAlwaysOpen: false,
+          showMeetingHeader: false,
+          disableInvite: true,
+          meetingInfo: ['topic', 'host'],
           success: () => {
             console.log('Zoom SDK initialized')
             
-            // Join the meeting
+            // Join the meeting as view-only (no audio/video)
             ZoomMtg.join({
               signature: signature,
               sdkKey: sdkKey,
