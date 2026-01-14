@@ -148,7 +148,7 @@ export default function ExperienceClient({ experienceId, user }: ExperienceClien
         </div>
 
         {/* Title */}
-        <h1 className="text-3xl font-bold text-white mb-4">{liveMeeting.title}</h1>
+        <h1 className="text-3xl font-bold mb-4" style={{ color: '#ffffff' }}>{liveMeeting.title}</h1>
         
         {/* Description */}
         <p className="text-zinc-400 text-lg mb-8 leading-relaxed">
