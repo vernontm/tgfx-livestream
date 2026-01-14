@@ -40,6 +40,16 @@ function LiveMeetingContent() {
         setIsLoading(true)
         setError(null)
 
+        // First check if there's actually a live meeting
+        const liveCheckResponse = await fetch('/api/zoom/live-meeting')
+        const liveCheckData = await liveCheckResponse.json()
+        
+        if (!liveCheckData.live) {
+          setError('no_stream')
+          setIsLoading(false)
+          return
+        }
+
         // Use username from URL (passed from experience page which has Whop headers)
         const userName = usernameFromUrl || 'Viewer'
         setDisplayName(userName)
@@ -226,8 +236,38 @@ function LiveMeetingContent() {
     )
   }
 
-  // Viewer view - Zoom SDK Client View
-  // The SDK will render its own UI when initialized
+  // No stream available popup
+  if (error === 'no_stream') {
+    return (
+      <div className="h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-6">
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: 'rgba(93, 198, 174, 0.15)' }}>
+            <svg className="w-10 h-10" style={{ color: '#5dc6ae' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-3">No Active Stream</h2>
+          <p className="text-zinc-400 mb-6 leading-relaxed">
+            There&apos;s no live stream right now. Please check back later during stream hours.
+          </p>
+          <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 mb-6">
+            <p className="text-zinc-400 text-sm mb-1">Stream Schedule</p>
+            <p className="text-white font-semibold">7:30 AM - 10:30 AM EST</p>
+            <p className="text-zinc-500 text-xs mt-1">Monday - Friday</p>
+          </div>
+          <button 
+            onClick={() => router.push('/experiences/test')}
+            className="px-6 py-3 text-white rounded-xl font-semibold transition-all hover:scale-105"
+            style={{ backgroundColor: '#5dc6ae' }}
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Other errors
   if (error) {
     return (
       <div className="h-screen bg-zinc-950 flex items-center justify-center">
@@ -239,9 +279,12 @@ function LiveMeetingContent() {
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Unable to Join Meeting</h2>
           <p className="text-zinc-400 mb-6">{error}</p>
-          <a href="/experiences/test" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          <button 
+            onClick={() => router.push('/experiences/test')}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
             Go Back
-          </a>
+          </button>
         </div>
       </div>
     )
