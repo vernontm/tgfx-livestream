@@ -17,10 +17,9 @@ interface ZoomMeetingResponse {
 let cachedToken: { token: string; expiresAt: number } | null = null
 
 async function getZoomAccessToken(): Promise<string> {
-  // Check if we have a valid cached token
-  if (cachedToken && cachedToken.expiresAt > Date.now()) {
-    return cachedToken.token
-  }
+  // Force fresh token - don't use cache (scopes may have changed)
+  // TODO: Re-enable caching once scopes are confirmed working
+  cachedToken = null
 
   const accountId = process.env.ZOOM_ACCOUNT_ID
   const clientId = process.env.ZOOM_CLIENT_ID
