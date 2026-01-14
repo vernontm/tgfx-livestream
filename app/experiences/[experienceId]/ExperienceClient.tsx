@@ -71,23 +71,46 @@ export default function ExperienceClient({ experienceId, user }: ExperienceClien
     )
   }
 
-  // No live stream - show waiting message
+  // No live stream - show enhanced waiting message
   if (!liveMeeting) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-6">
-          <div className="w-24 h-24 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-12 h-12 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+        <div className="text-center max-w-lg mx-auto">
+          {/* Subtle background effect */}
+          <div className="relative mb-8">
+            <div className="absolute inset-0 blur-3xl opacity-10" style={{ background: 'radial-gradient(circle, #5dc6ae 0%, transparent 70%)' }}></div>
+            
+            {/* Offline icon */}
+            <div className="relative w-28 h-28 mx-auto mb-6">
+              <div className="absolute inset-0 rounded-full bg-zinc-800/50"></div>
+              <div className="absolute inset-2 rounded-full bg-zinc-800 flex items-center justify-center">
+                <svg className="w-14 h-14 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-white mb-3">No Livestream Right Now</h1>
-          <p className="text-zinc-400 mb-6">
-            There&apos;s no active livestream at the moment. Check back later for upcoming streams!
+
+          {/* Offline badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800/50 border border-zinc-700/50 mb-4">
+            <span className="w-2.5 h-2.5 rounded-full bg-zinc-500"></span>
+            <span className="text-sm font-medium text-zinc-400">OFFLINE</span>
+          </div>
+
+          {/* Title */}
+          <h1 className="text-3xl font-bold text-white mb-4">No Livestream Right Now</h1>
+          
+          {/* Description */}
+          <p className="text-zinc-400 text-lg mb-8 leading-relaxed">
+            There&apos;s no active stream at the moment. This page will automatically update when a stream goes live.
           </p>
-          <div className="flex items-center justify-center gap-2 text-zinc-500 text-sm">
-            <div className="w-2 h-2 bg-zinc-600 rounded-full animate-pulse"></div>
-            <span>Checking for streams...</span>
+
+          {/* Status indicator */}
+          <div className="inline-flex items-center gap-3 px-5 py-3 rounded-xl bg-zinc-900/80 border border-zinc-800">
+            <div className="relative">
+              <div className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: '#5dc6ae' }}></div>
+            </div>
+            <span className="text-zinc-400 text-sm">Checking for streams...</span>
           </div>
         </div>
       </div>
