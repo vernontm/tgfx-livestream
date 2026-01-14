@@ -94,40 +94,66 @@ export default function ExperienceClient({ experienceId, user }: ExperienceClien
     )
   }
 
-  // Live stream exists - show join button
+  // Live stream exists - show enhanced join page
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-      <div className="text-center max-w-md mx-auto px-6">
-        <div className="w-24 h-24 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-          <span className="absolute -top-1 -right-1 flex h-4 w-4">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500"></span>
-          </span>
-          <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+      <div className="text-center max-w-lg mx-auto">
+        {/* Animated background glow */}
+        <div className="relative mb-8">
+          <div className="absolute inset-0 blur-3xl opacity-20" style={{ background: 'radial-gradient(circle, #5dc6ae 0%, transparent 70%)' }}></div>
+          
+          {/* Live indicator icon */}
+          <div className="relative w-28 h-28 mx-auto mb-6">
+            <div className="absolute inset-0 rounded-full animate-pulse opacity-30" style={{ backgroundColor: '#5dc6ae' }}></div>
+            <div className="absolute inset-2 rounded-full flex items-center justify-center" style={{ backgroundColor: '#5dc6ae' }}>
+              <svg className="w-14 h-14 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </div>
+            {/* Pulsing live dot */}
+            <span className="absolute top-0 right-0 flex h-5 w-5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: '#5dc6ae' }}></span>
+              <span className="relative inline-flex rounded-full h-5 w-5" style={{ backgroundColor: '#5dc6ae' }}></span>
+            </span>
+          </div>
         </div>
-        <div className="flex items-center justify-center gap-2 mb-3">
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+
+        {/* Live badge */}
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4" style={{ backgroundColor: 'rgba(93, 198, 174, 0.15)', border: '1px solid rgba(93, 198, 174, 0.3)' }}>
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: '#5dc6ae' }}></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5" style={{ backgroundColor: '#5dc6ae' }}></span>
           </span>
-          <span className="text-red-500 font-semibold">LIVE NOW</span>
+          <span className="text-sm font-semibold tracking-wide" style={{ color: '#5dc6ae' }}>LIVE NOW</span>
         </div>
-        <h1 className="text-2xl font-bold text-white mb-3">{liveMeeting.title}</h1>
-        <p className="text-zinc-400 mb-8">
-          A livestream is currently in progress. Join now to watch!
+
+        {/* Title */}
+        <h1 className="text-3xl font-bold text-white mb-4">{liveMeeting.title}</h1>
+        
+        {/* Description */}
+        <p className="text-zinc-400 text-lg mb-8 leading-relaxed">
+          The stream is live! Click below to join and start watching.
         </p>
+
+        {/* Join button */}
         <button
           onClick={handleJoinLive}
-          className="w-full px-8 py-4 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold text-lg flex items-center justify-center gap-3"
+          className="w-full max-w-xs mx-auto px-8 py-4 text-white rounded-xl font-semibold text-lg flex items-center justify-center gap-3 transition-all duration-200 hover:scale-105 hover:shadow-lg"
+          style={{ 
+            backgroundColor: '#5dc6ae',
+            boxShadow: '0 4px 20px rgba(93, 198, 174, 0.3)'
+          }}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
           </svg>
           Join Livestream
         </button>
+
+        {/* Viewer count hint */}
+        <p className="text-zinc-500 text-sm mt-6">
+          You&apos;ll join with audio enabled
+        </p>
       </div>
     </div>
   )
