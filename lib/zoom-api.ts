@@ -160,10 +160,19 @@ export async function getLiveMeetingFromZoom(): Promise<{ id: string; topic: str
 
     if (liveMeetings.length > 0) {
       const meeting = liveMeetings[0]
-      console.log('Found live meeting:', meeting.id)
+      console.log('Found live meeting:', meeting.id, 'join_url:', meeting.join_url)
       
-      // Get meeting details to retrieve the password
+      // Extract password from join_url (format: ?pwd=XXXXX)
       let meetingPassword = meeting.password || ''
+      if (!meetingPassword && meeting.join_url) {
+        const urlMatch = meeting.join_url.match(/[?&]pwd=([^&]+)/)
+        if (urlMatch) {
+          meetingPassword = urlMatch[1]
+          console.log('Extracted password from join_url')
+        }
+      }
+      
+      // Fallback: Get meeting details
       if (!meetingPassword) {
         try {
           const detailsResponse = await fetch(`https://api.zoom.us/v2/meetings/${meeting.id}`, {
@@ -175,8 +184,16 @@ export async function getLiveMeetingFromZoom(): Promise<{ id: string; topic: str
           })
           if (detailsResponse.ok) {
             const details = await detailsResponse.json()
+            console.log('Meeting details:', JSON.stringify(details))
             meetingPassword = details.password || details.encrypted_password || ''
-            console.log('Got meeting password from details')
+            
+            // Try extracting from join_url in details
+            if (!meetingPassword && details.join_url) {
+              const detailsUrlMatch = details.join_url.match(/[?&]pwd=([^&]+)/)
+              if (detailsUrlMatch) {
+                meetingPassword = detailsUrlMatch[1]
+              }
+            }
           }
         } catch (err) {
           console.error('Failed to get meeting details:', err)
