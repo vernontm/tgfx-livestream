@@ -147,9 +147,10 @@ const PERMANENT_MEETING_ID = '4911048592'
 export async function getLiveMeetingFromZoom(): Promise<{ id: string; topic: string; password?: string } | null> {
   const accessToken = await getZoomAccessToken()
 
-  // Only check the permanent meeting ID
+  // Check live meetings from the host user and look for our permanent meeting
   try {
-    const permanentMeetingResponse = await fetch(`https://api.zoom.us/v2/meetings/${PERMANENT_MEETING_ID}`, {
+    // Get the host's live meetings
+    const liveResponse = await fetch('https://api.zoom.us/v2/users/me/meetings?type=live', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -157,18 +158,21 @@ export async function getLiveMeetingFromZoom(): Promise<{ id: string; topic: str
       }
     })
 
-    if (permanentMeetingResponse.ok) {
-      const meetingData = await permanentMeetingResponse.json()
-      console.log('Permanent meeting status:', meetingData.status)
+    if (liveResponse.ok) {
+      const liveData = await liveResponse.json()
+      const liveMeetings = liveData.meetings || []
+      console.log('Live meetings found:', liveMeetings.length)
       
-      // Check if meeting is in progress (status = 'started')
-      if (meetingData.status === 'started') {
+      // Look for our permanent meeting in the live meetings list
+      const permanentMeeting = liveMeetings.find((m: { id: number }) => String(m.id) === PERMANENT_MEETING_ID)
+      
+      if (permanentMeeting) {
         console.log('Permanent meeting is LIVE!')
         
         // Extract password from join_url
-        let meetingPassword = meetingData.password || ''
-        if (!meetingPassword && meetingData.join_url) {
-          const urlMatch = meetingData.join_url.match(/[?&]pwd=([^&]+)/)
+        let meetingPassword = permanentMeeting.password || ''
+        if (!meetingPassword && permanentMeeting.join_url) {
+          const urlMatch = permanentMeeting.join_url.match(/[?&]pwd=([^&]+)/)
           if (urlMatch) {
             meetingPassword = urlMatch[1]
           }
@@ -180,11 +184,60 @@ export async function getLiveMeetingFromZoom(): Promise<{ id: string; topic: str
           password: meetingPassword
         }
       }
-    } else {
-      console.error('Failed to check permanent meeting:', permanentMeetingResponse.status)
+    }
+    
+    // Also check all users in the account (for Server-to-Server OAuth)
+    const usersResponse = await fetch('https://api.zoom.us/v2/users?status=active&page_size=30', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (usersResponse.ok) {
+      const usersData = await usersResponse.json()
+      const users = usersData.users || []
+      
+      for (const user of users) {
+        const userLiveResponse = await fetch(`https://api.zoom.us/v2/users/${user.id}/meetings?type=live`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (userLiveResponse.ok) {
+          const userLiveData = await userLiveResponse.json()
+          const userLiveMeetings = userLiveData.meetings || []
+          
+          // Look for our permanent meeting
+          const permanentMeeting = userLiveMeetings.find((m: { id: number }) => String(m.id) === PERMANENT_MEETING_ID)
+          
+          if (permanentMeeting) {
+            console.log('Permanent meeting is LIVE (from user', user.email, ')!')
+            
+            // Extract password from join_url
+            let meetingPassword = permanentMeeting.password || ''
+            if (!meetingPassword && permanentMeeting.join_url) {
+              const urlMatch = permanentMeeting.join_url.match(/[?&]pwd=([^&]+)/)
+              if (urlMatch) {
+                meetingPassword = urlMatch[1]
+              }
+            }
+            
+            return {
+              id: PERMANENT_MEETING_ID,
+              topic: 'TGFX Live Trading Stream',
+              password: meetingPassword
+            }
+          }
+        }
+      }
     }
   } catch (err) {
-    console.error('Error checking permanent meeting:', err)
+    console.error('Error checking for live meeting:', err)
   }
 
   // No live meeting
