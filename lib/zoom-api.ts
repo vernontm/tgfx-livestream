@@ -147,7 +147,7 @@ const PERMANENT_MEETING_ID = '4911048592'
 export async function getLiveMeetingFromZoom(): Promise<{ id: string; topic: string; password?: string } | null> {
   const accessToken = await getZoomAccessToken()
 
-  // First check if the permanent meeting is live
+  // Only check the permanent meeting ID
   try {
     const permanentMeetingResponse = await fetch(`https://api.zoom.us/v2/meetings/${PERMANENT_MEETING_ID}`, {
       method: 'GET',
@@ -161,7 +161,7 @@ export async function getLiveMeetingFromZoom(): Promise<{ id: string; topic: str
       const meetingData = await permanentMeetingResponse.json()
       console.log('Permanent meeting status:', meetingData.status)
       
-      // Check if meeting is in progress (status = 'started' or 'waiting')
+      // Check if meeting is in progress (status = 'started')
       if (meetingData.status === 'started') {
         console.log('Permanent meeting is LIVE!')
         
@@ -180,63 +180,21 @@ export async function getLiveMeetingFromZoom(): Promise<{ id: string; topic: str
           password: meetingPassword
         }
       }
+    } else {
+      console.error('Failed to check permanent meeting:', permanentMeetingResponse.status)
     }
   } catch (err) {
     console.error('Error checking permanent meeting:', err)
   }
 
-  // Fallback: Get list of users in the account and check for any live meetings
-  const usersResponse = await fetch('https://api.zoom.us/v2/users?status=active&page_size=30', {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json'
-    }
-  })
+  // No live meeting
+  console.log('Permanent meeting is not live')
+  return null
+}
 
-  if (usersResponse.ok) {
-    const usersData = await usersResponse.json()
-    const users = usersData.users || []
-    console.log('Found', users.length, 'users in account')
-
-    // Check each user for live meetings
-    for (const user of users) {
-      const userLiveResponse = await fetch(`https://api.zoom.us/v2/users/${user.id}/meetings?type=live`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (userLiveResponse.ok) {
-        const userLiveData = await userLiveResponse.json()
-        const liveMeetings = userLiveData.meetings || []
-        
-        if (liveMeetings.length > 0) {
-          const meeting = liveMeetings[0]
-          console.log('Found live meeting from user', user.email, ':', meeting.id)
-          
-          // Extract password from join_url
-          let meetingPassword = meeting.password || ''
-          if (!meetingPassword && meeting.join_url) {
-            const urlMatch = meeting.join_url.match(/[?&]pwd=([^&]+)/)
-            if (urlMatch) {
-              meetingPassword = urlMatch[1]
-            }
-          }
-          
-          return {
-            id: String(meeting.id),
-            topic: meeting.topic,
-            password: meetingPassword
-          }
-        }
-      }
-    }
-  }
-
-  // Fallback: try the original /users/me endpoint
+// Keep the old function for reference but don't use it
+async function getLiveMeetingFromZoomOld(): Promise<{ id: string; topic: string; password?: string } | null> {
+  const accessToken = await getZoomAccessToken()
   const liveResponse = await fetch('https://api.zoom.us/v2/users/me/meetings?type=live', {
     method: 'GET',
     headers: {
