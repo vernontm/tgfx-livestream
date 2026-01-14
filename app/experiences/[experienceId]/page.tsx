@@ -19,7 +19,9 @@ export default async function ExperiencePage({ params, searchParams }: PageProps
   
   // Use Whop username, or check for admin query param for testing
   const isAdminMode = query.admin === '1' || query.admin === 'true'
-  const username = whopUsername || (isAdminMode ? 'Rayvaughnfx' : 'Guest')
+  // Generate a unique viewer name if no Whop username is available
+  const defaultViewerName = `Viewer_${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+  const username = whopUsername || (isAdminMode ? 'Rayvaughnfx' : defaultViewerName)
   
   // For development/testing, allow access without Whop headers
   const effectiveUserId = userId || 'whop-user'
