@@ -155,20 +155,22 @@ export default function ExperienceClient({ experienceId, user }: ExperienceClien
           The stream is live! Click below to join and start watching.
         </p>
 
-        {/* Join button */}
-        <button
-          onClick={handleJoinLive}
-          className="w-full max-w-xs mx-auto px-8 py-4 text-white rounded-xl font-semibold text-lg flex items-center justify-center gap-3 transition-all duration-200 hover:scale-105 hover:shadow-lg"
-          style={{ 
-            backgroundColor: '#5dc6ae',
-            boxShadow: '0 4px 20px rgba(93, 198, 174, 0.3)'
-          }}
-        >
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-          Join Livestream
-        </button>
+        {/* Join button - centered */}
+        <div className="flex justify-center">
+          <button
+            onClick={handleJoinLive}
+            className="px-8 py-4 text-white rounded-xl font-semibold text-lg flex items-center justify-center gap-3 transition-all duration-200 hover:scale-105 hover:shadow-lg"
+            style={{ 
+              backgroundColor: '#5dc6ae',
+              boxShadow: '0 4px 20px rgba(93, 198, 174, 0.3)'
+            }}
+          >
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            Join Livestream
+          </button>
+        </div>
 
         {/* Viewer count hint */}
         <p className="text-zinc-500 text-sm mt-6">
