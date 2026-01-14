@@ -81,13 +81,10 @@ export default function ExperienceClient({ experienceId, user }: ExperienceClien
             <div className="absolute inset-0 blur-3xl opacity-10" style={{ background: 'radial-gradient(circle, #5dc6ae 0%, transparent 70%)' }}></div>
             
             {/* Offline icon */}
-            <div className="relative w-28 h-28 mx-auto mb-6">
-              <div className="absolute inset-0 rounded-full bg-zinc-800/50"></div>
-              <div className="absolute inset-2 rounded-full bg-zinc-800 flex items-center justify-center">
-                <svg className="w-14 h-14 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </div>
+            <div className="relative w-28 h-28 mx-auto mb-6 flex items-center justify-center">
+              <svg className="w-14 h-14 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
             </div>
           </div>
 
