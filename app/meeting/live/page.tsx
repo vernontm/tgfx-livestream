@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState, useEffect } from 'react'
+import { Suspense, useState, useEffect, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 
 function MeetingLoader() {
@@ -25,21 +25,88 @@ function LiveMeetingContent() {
   const isHost = searchParams.get('host') === '1'
   
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [sdkReady, setSdkReady] = useState(false)
+  const initStarted = useRef(false)
 
-  // For host: open Zoom desktop app, for viewers: embed web client in iframe
+  // Load Zoom SDK and join meeting
   useEffect(() => {
-    if (isHost && meetingNumber) {
-      // Open Zoom desktop app for host to start meeting
-      // zoommtg:// protocol launches the desktop app directly
-      const desktopUrl = `zoommtg://zoom.us/start?confno=${meetingNumber}&pwd=${password}&zc=0`
-      window.location.href = desktopUrl
-    }
-  }, [isHost, meetingNumber, password])
+    if (!meetingNumber || initStarted.current) return
+    initStarted.current = true
 
-  // Zoom web client URL for viewers (join as guest with Whop username)
-  // pwd = meeting passcode, un = username (prefilled)
-  const encodedUsername = encodeURIComponent(username)
-  const zoomWebClientUrl = `https://zoom.us/wc/${meetingNumber}/join?pwd=${password}&prefer=1&un=${encodedUsername}`
+    const initZoomSDK = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        // Dynamically import the Zoom SDK
+        const { ZoomMtg } = await import('@zoom/meetingsdk')
+        
+        ZoomMtg.preLoadWasm()
+        ZoomMtg.prepareWebSDK()
+
+        // Get signature from our API
+        const signatureResponse = await fetch('/api/zoom/signature', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            meetingNumber: meetingNumber,
+            role: 0 // 0 = attendee, 1 = host
+          })
+        })
+
+        if (!signatureResponse.ok) {
+          throw new Error('Failed to get meeting signature')
+        }
+
+        const { signature } = await signatureResponse.json()
+        const sdkKey = process.env.NEXT_PUBLIC_ZOOM_SDK_KEY
+
+        if (!sdkKey) {
+          throw new Error('Zoom SDK key not configured')
+        }
+
+        // Initialize the SDK
+        ZoomMtg.init({
+          leaveUrl: window.location.origin + '/experiences/test',
+          patchJsMedia: true,
+          success: () => {
+            console.log('Zoom SDK initialized')
+            
+            // Join the meeting
+            ZoomMtg.join({
+              signature: signature,
+              sdkKey: sdkKey,
+              meetingNumber: meetingNumber,
+              userName: username,
+              passWord: password,
+              success: () => {
+                console.log('Joined meeting successfully')
+                setIsLoading(false)
+                setSdkReady(true)
+              },
+              error: (err: Error) => {
+                console.error('Failed to join meeting:', err)
+                setError('Failed to join meeting. Please try again.')
+                setIsLoading(false)
+              }
+            })
+          },
+          error: (err: Error) => {
+            console.error('Failed to initialize Zoom SDK:', err)
+            setError('Failed to initialize Zoom. Please try again.')
+            setIsLoading(false)
+          }
+        })
+      } catch (err) {
+        console.error('Error setting up Zoom:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load Zoom')
+        setIsLoading(false)
+      }
+    }
+
+    initZoomSDK()
+  }, [meetingNumber, password, username])
 
   const handleEndMeeting = async () => {
     if (confirm('Are you sure you want to end this meeting?')) {
@@ -144,48 +211,42 @@ function LiveMeetingContent() {
     )
   }
 
-  // Viewer view - embedded iframe (no meeting ID shown)
-  return (
-    <div className="h-screen bg-zinc-950 flex flex-col">
-      <header className="bg-zinc-900 border-b border-zinc-800 px-6 py-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-              </span>
-              <span className="text-red-500 font-semibold">LIVE</span>
-            </div>
-            <h1 className="text-lg font-semibold text-white">{decodeURIComponent(title)}</h1>
+  // Viewer view - Zoom SDK Client View
+  // The SDK will render its own UI when initialized
+  if (error) {
+    return (
+      <div className="h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-6">
+          <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </div>
-          
-          <a href="/" className="px-3 py-1.5 bg-zinc-700 text-white text-sm rounded hover:bg-zinc-600">
-            Leave
+          <h2 className="text-xl font-bold text-white mb-2">Unable to Join Meeting</h2>
+          <p className="text-zinc-400 mb-6">{error}</p>
+          <a href="/experiences/test" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            Go Back
           </a>
         </div>
-      </header>
+      </div>
+    )
+  }
 
-      <main className="flex-1 relative">
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-zinc-900 z-10">
-            <div className="text-white text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-              <p>Loading Zoom...</p>
-            </div>
-          </div>
-        )}
-        
-        <iframe
-          src={zoomWebClientUrl}
-          className="w-full h-full border-0"
-          allow="camera; microphone; fullscreen; display-capture; autoplay"
-          allowFullScreen
-          onLoad={() => setIsLoading(false)}
-        />
-      </main>
-    </div>
-  )
+  if (isLoading) {
+    return (
+      <div className="h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Joining {decodeURIComponent(title)}...</p>
+          <p className="text-zinc-500 text-sm mt-2">Connecting as {username}</p>
+        </div>
+      </div>
+    )
+  }
+
+  // When SDK is ready, it takes over the page - return empty div
+  // The Zoom SDK Client View renders its own full-page UI
+  return <div id="zmmtg-root"></div>
 }
 
 export default function LiveMeetingPage() {
