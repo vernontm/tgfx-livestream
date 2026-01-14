@@ -66,19 +66,19 @@ function LiveMeetingContent() {
           throw new Error('Zoom SDK key not configured')
         }
 
-        // Initialize the SDK with viewer-only settings (no mic/video)
+        // Initialize the SDK - viewers can hear audio but start muted, no video
         ZoomMtg.init({
           leaveUrl: window.location.origin + '/experiences/test',
           patchJsMedia: true,
           disablePreview: true,
-          disableJoinAudio: false,
           disableCallOut: true,
           disableRecord: true,
-          disableVoIP: true,
           audioPanelAlwaysOpen: false,
           showMeetingHeader: false,
           disableInvite: true,
           meetingInfo: ['topic', 'host'],
+          isSupportAV: true,
+          defaultView: 'gallery',
           success: () => {
             console.log('Zoom SDK initialized')
             
