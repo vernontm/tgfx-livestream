@@ -141,10 +141,51 @@ export async function getMeetingStatus(meetingId: string): Promise<'waiting' | '
   return data.status || 'waiting'
 }
 
+// Permanent meeting ID for TGFX Live Trading Stream
+const PERMANENT_MEETING_ID = '4911048592'
+
 export async function getLiveMeetingFromZoom(): Promise<{ id: string; topic: string; password?: string } | null> {
   const accessToken = await getZoomAccessToken()
 
-  // Get list of users in the account first
+  // First check if the permanent meeting is live
+  try {
+    const permanentMeetingResponse = await fetch(`https://api.zoom.us/v2/meetings/${PERMANENT_MEETING_ID}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (permanentMeetingResponse.ok) {
+      const meetingData = await permanentMeetingResponse.json()
+      console.log('Permanent meeting status:', meetingData.status)
+      
+      // Check if meeting is in progress (status = 'started' or 'waiting')
+      if (meetingData.status === 'started') {
+        console.log('Permanent meeting is LIVE!')
+        
+        // Extract password from join_url
+        let meetingPassword = meetingData.password || ''
+        if (!meetingPassword && meetingData.join_url) {
+          const urlMatch = meetingData.join_url.match(/[?&]pwd=([^&]+)/)
+          if (urlMatch) {
+            meetingPassword = urlMatch[1]
+          }
+        }
+        
+        return {
+          id: PERMANENT_MEETING_ID,
+          topic: 'TGFX Live Trading Stream',
+          password: meetingPassword
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error checking permanent meeting:', err)
+  }
+
+  // Fallback: Get list of users in the account and check for any live meetings
   const usersResponse = await fetch('https://api.zoom.us/v2/users?status=active&page_size=30', {
     method: 'GET',
     headers: {
