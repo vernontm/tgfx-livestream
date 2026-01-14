@@ -1,104 +1,25 @@
 import { NextResponse } from 'next/server'
-import { getLiveMeetingFromZoom, getMeetingStatus } from '@/lib/zoom-api'
-import { supabase } from '@/lib/supabase'
+import { getLiveMeetingFromZoom } from '@/lib/zoom-api'
 
 export async function GET() {
   try {
-    console.log('Checking for live meeting...')
-    console.log('Supabase configured:', !!supabase)
-    
-    // First check database for meetings marked as live
-    if (supabase) {
-      const { data: dbLiveMeeting, error: dbError } = await supabase
-        .from('meetings')
-        .select('*')
-        .eq('status', 'live')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      console.log('Database query result:', { dbLiveMeeting, dbError })
-
-      if (dbError) {
-        console.error('Database error:', dbError)
-      }
-
-      if (dbLiveMeeting) {
-        // Verify the meeting is still valid on Zoom
-        const zoomStatus = await getMeetingStatus(dbLiveMeeting.zoom_meeting_id)
-        console.log('Zoom meeting status:', zoomStatus)
-        
-        // If meeting is ended or not found on Zoom, mark it as ended in DB
-        if (zoomStatus === 'ended' || zoomStatus === 'notfound') {
-          console.log('Meeting ended on Zoom, updating database...')
-          await supabase
-            .from('meetings')
-            .update({ status: 'ended' })
-            .eq('id', dbLiveMeeting.id)
-          
-          // Continue to check for other live meetings
-        } else {
-          // Meeting is valid (waiting or started)
-          console.log('Found valid live meeting in database:', dbLiveMeeting.zoom_meeting_id)
-          return NextResponse.json({
-            live: true,
-            meeting: {
-              id: dbLiveMeeting.id,
-              meetingNumber: dbLiveMeeting.zoom_meeting_id,
-              password: dbLiveMeeting.zoom_password || '',
-              title: dbLiveMeeting.title
-            }
-          })
-        }
-      }
-    } else {
-      console.log('Supabase not configured, skipping database check')
-    }
-
-    // Fallback: Check Zoom API for live meetings
+    // Check Zoom API directly for any live meetings
+    // This works regardless of how the meeting was started (app or Zoom desktop)
     const zoomLiveMeeting = await getLiveMeetingFromZoom()
 
     if (zoomLiveMeeting) {
-      console.log('Found live meeting from Zoom API:', zoomLiveMeeting.id)
-      
-      // Sync to database
-      if (supabase) {
-        const { data: existingMeeting } = await supabase
-          .from('meetings')
-          .select('*')
-          .eq('zoom_meeting_id', zoomLiveMeeting.id)
-          .single()
-
-        if (existingMeeting) {
-          await supabase
-            .from('meetings')
-            .update({ status: 'live' })
-            .eq('zoom_meeting_id', zoomLiveMeeting.id)
-
-          return NextResponse.json({
-            live: true,
-            meeting: {
-              id: existingMeeting.id,
-              meetingNumber: zoomLiveMeeting.id,
-              password: existingMeeting.zoom_password || zoomLiveMeeting.password || '',
-              title: existingMeeting.title || zoomLiveMeeting.topic
-            }
-          })
-        }
-      }
-
+      console.log('Found live meeting from Zoom:', zoomLiveMeeting.id)
       return NextResponse.json({
         live: true,
         meeting: {
           meetingNumber: zoomLiveMeeting.id,
           password: zoomLiveMeeting.password || '',
-          title: zoomLiveMeeting.topic
+          title: zoomLiveMeeting.topic || 'TGFX Livestream'
         }
       })
     }
 
     // No live meeting found
-    console.log('No live meeting found')
     return NextResponse.json({
       live: false,
       meeting: null
