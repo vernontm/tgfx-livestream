@@ -161,10 +161,32 @@ export async function getLiveMeetingFromZoom(): Promise<{ id: string; topic: str
     if (liveMeetings.length > 0) {
       const meeting = liveMeetings[0]
       console.log('Found live meeting:', meeting.id)
+      
+      // Get meeting details to retrieve the password
+      let meetingPassword = meeting.password || ''
+      if (!meetingPassword) {
+        try {
+          const detailsResponse = await fetch(`https://api.zoom.us/v2/meetings/${meeting.id}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          if (detailsResponse.ok) {
+            const details = await detailsResponse.json()
+            meetingPassword = details.password || details.encrypted_password || ''
+            console.log('Got meeting password from details')
+          }
+        } catch (err) {
+          console.error('Failed to get meeting details:', err)
+        }
+      }
+      
       return {
         id: String(meeting.id),
         topic: meeting.topic,
-        password: meeting.password
+        password: meetingPassword
       }
     }
   } else {

@@ -21,6 +21,7 @@ function LiveMeetingContent() {
   const meetingNumber = searchParams.get('meetingNumber') || ''
   const password = searchParams.get('password') || ''
   const title = searchParams.get('title') || 'TGFX Livestream'
+  const username = searchParams.get('username') || 'Viewer'
   const isHost = searchParams.get('host') === '1'
   
   const [isLoading, setIsLoading] = useState(true)
@@ -35,10 +36,10 @@ function LiveMeetingContent() {
     }
   }, [isHost, meetingNumber, password])
 
-  // Zoom web client URL for viewers (join as guest, not start)
-  // Using uname parameter to set a guest name so they don't need to log in
-  const guestName = encodeURIComponent('Viewer')
-  const zoomWebClientUrl = `https://zoom.us/wc/${meetingNumber}/join?pwd=${password}&prefer=1&un=${guestName}`
+  // Zoom web client URL for viewers (join as guest with Whop username)
+  // pwd = meeting passcode, un = username (prefilled)
+  const encodedUsername = encodeURIComponent(username)
+  const zoomWebClientUrl = `https://zoom.us/wc/${meetingNumber}/join?pwd=${password}&prefer=1&un=${encodedUsername}`
 
   const handleEndMeeting = async () => {
     if (confirm('Are you sure you want to end this meeting?')) {
