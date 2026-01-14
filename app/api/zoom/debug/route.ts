@@ -31,8 +31,8 @@ export async function GET() {
         tokenStatus = 'success'
         const tokenData = await tokenResponse.json()
         
-        // Get user info to see which account we're connected to
-        const userResponse = await fetch('https://api.zoom.us/v2/users/me', {
+        // Get all users in the account to see which account we're connected to
+        const usersResponse = await fetch('https://api.zoom.us/v2/users?status=active&page_size=30', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${tokenData.access_token}`,
@@ -41,9 +41,17 @@ export async function GET() {
         })
         
         let userInfo = null
-        if (userResponse.ok) {
-          const userData = await userResponse.json()
-          userInfo = { email: userData.email, display_name: userData.display_name, id: userData.id }
+        if (usersResponse.ok) {
+          const usersData = await usersResponse.json()
+          const users = usersData.users || []
+          userInfo = {
+            totalUsers: users.length,
+            users: users.map((u: { email: string; first_name: string; last_name: string; id: string }) => ({ 
+              email: u.email, 
+              name: `${u.first_name} ${u.last_name}`,
+              id: u.id 
+            }))
+          }
         }
         
         // Try to get live meetings
