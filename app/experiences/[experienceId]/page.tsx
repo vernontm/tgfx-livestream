@@ -20,37 +20,32 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
   }
 }
 
-// Fetch user info from Whop API
-async function getWhopUser(userId: string): Promise<{ username: string; email: string } | null> {
-  const apiKey = process.env.WHOP_API_KEY
-  if (!apiKey) {
-    console.error('WHOP_API_KEY not configured')
-    return null
-  }
-  
+// Fetch user info from Whop API using the user token
+async function getWhopUserFromToken(userToken: string): Promise<{ username: string; email: string } | null> {
   try {
-    console.log('Fetching Whop user:', userId)
-    const response = await fetch(`https://api.whop.com/api/v5/users/${userId}`, {
+    console.log('Fetching Whop user with token')
+    // Use the /me endpoint with the user's token
+    const response = await fetch('https://api.whop.com/api/v5/me', {
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${userToken}`,
         'Content-Type': 'application/json'
       }
     })
     
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Whop API error:', response.status, errorText)
+      console.error('Whop /me API error:', response.status, errorText)
       return null
     }
     
     const data = await response.json()
-    console.log('Whop API response:', JSON.stringify(data))
+    console.log('Whop /me API response:', JSON.stringify(data))
     return {
-      username: data.username || data.name || userId,
+      username: data.username || data.name || data.id || 'Viewer',
       email: data.email || ''
     }
   } catch (err) {
-    console.error('Failed to fetch Whop user:', err)
+    console.error('Failed to fetch Whop user from token:', err)
     return null
   }
 }
@@ -80,9 +75,9 @@ export default async function ExperiencePage({ params, searchParams }: PageProps
         whopUsername = cachedUser.username
         email = cachedUser.email || ''
         console.log('Got username from database:', whopUsername)
-      } else {
-        // Fetch user details from Whop API
-        const whopUser = await getWhopUser(userId)
+      } else if (whopUserToken) {
+        // Fetch user details from Whop API using the token
+        const whopUser = await getWhopUserFromToken(whopUserToken)
         if (whopUser) {
           whopUsername = whopUser.username
           email = whopUser.email
