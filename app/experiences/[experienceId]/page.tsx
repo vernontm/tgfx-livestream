@@ -22,9 +22,13 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 // Fetch user info from Whop API
 async function getWhopUser(userId: string): Promise<{ username: string; email: string } | null> {
   const apiKey = process.env.WHOP_API_KEY
-  if (!apiKey) return null
+  if (!apiKey) {
+    console.error('WHOP_API_KEY not configured')
+    return null
+  }
   
   try {
+    console.log('Fetching Whop user:', userId)
     const response = await fetch(`https://api.whop.com/api/v5/users/${userId}`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -33,11 +37,13 @@ async function getWhopUser(userId: string): Promise<{ username: string; email: s
     })
     
     if (!response.ok) {
-      console.error('Whop API error:', response.status)
+      const errorText = await response.text()
+      console.error('Whop API error:', response.status, errorText)
       return null
     }
     
     const data = await response.json()
+    console.log('Whop API response:', JSON.stringify(data))
     return {
       username: data.username || data.name || userId,
       email: data.email || ''
