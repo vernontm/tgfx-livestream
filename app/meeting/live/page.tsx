@@ -21,12 +21,12 @@ function LiveMeetingContent() {
   const meetingNumber = searchParams.get('meetingNumber') || ''
   const password = searchParams.get('password') || ''
   const title = searchParams.get('title') || 'TGFX Livestream'
-  const username = searchParams.get('username') || 'Viewer'
   const isHost = searchParams.get('host') === '1'
   
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [sdkReady, setSdkReady] = useState(false)
+  const [displayName, setDisplayName] = useState<string>('Viewer')
   const initStarted = useRef(false)
 
   // Load Zoom SDK and join meeting
@@ -38,6 +38,21 @@ function LiveMeetingContent() {
       try {
         setIsLoading(true)
         setError(null)
+
+        // Fetch Whop username first
+        let userName = 'Viewer'
+        try {
+          const userResponse = await fetch('/api/whop/user')
+          if (userResponse.ok) {
+            const userData = await userResponse.json()
+            if (userData.username) {
+              userName = userData.username
+              setDisplayName(userName)
+            }
+          }
+        } catch (err) {
+          console.log('Could not fetch Whop username, using default')
+        }
 
         // Dynamically import the Zoom SDK
         const { ZoomMtg } = await import('@zoom/meetingsdk')
@@ -87,7 +102,7 @@ function LiveMeetingContent() {
               signature: signature,
               sdkKey: sdkKey,
               meetingNumber: meetingNumber,
-              userName: username,
+              userName: userName,
               passWord: password,
               success: () => {
                 console.log('Joined meeting successfully')
@@ -115,7 +130,7 @@ function LiveMeetingContent() {
     }
 
     initZoomSDK()
-  }, [meetingNumber, password, username])
+  }, [meetingNumber, password])
 
   const handleEndMeeting = async () => {
     if (confirm('Are you sure you want to end this meeting?')) {
@@ -247,7 +262,7 @@ function LiveMeetingContent() {
         <div className="text-white text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p>Joining {decodeURIComponent(title)}...</p>
-          <p className="text-zinc-500 text-sm mt-2">Connecting as {username}</p>
+          <p className="text-zinc-500 text-sm mt-2">Connecting as {displayName}</p>
         </div>
       </div>
     )
