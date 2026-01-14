@@ -145,7 +145,8 @@ export async function getMeetingStatus(meetingId: string): Promise<'waiting' | '
 export async function getLiveMeetingFromZoom(): Promise<{ id: string; topic: string; password?: string } | null> {
   const accessToken = await getZoomAccessToken()
 
-  const response = await fetch('https://api.zoom.us/v2/users/me/meetings?type=live', {
+  // First try to get live meetings directly
+  const liveResponse = await fetch('https://api.zoom.us/v2/users/me/meetings?type=live', {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
@@ -153,23 +154,64 @@ export async function getLiveMeetingFromZoom(): Promise<{ id: string; topic: str
     }
   })
 
-  if (!response.ok) {
-    console.error('Failed to get live meetings from Zoom')
-    return null
+  if (liveResponse.ok) {
+    const liveData = await liveResponse.json()
+    console.log('Zoom live meetings response:', JSON.stringify(liveData))
+    const liveMeetings = liveData.meetings || []
+
+    if (liveMeetings.length > 0) {
+      const meeting = liveMeetings[0]
+      console.log('Found live meeting:', meeting.id)
+      return {
+        id: String(meeting.id),
+        topic: meeting.topic,
+        password: meeting.password
+      }
+    }
+  } else {
+    const errorText = await liveResponse.text()
+    console.error('Failed to get live meetings from Zoom:', liveResponse.status, errorText)
   }
 
-  const data = await response.json()
-  const liveMeetings = data.meetings || []
+  // Fallback: Check scheduled/upcoming meetings and see if any are "started"
+  const scheduledResponse = await fetch('https://api.zoom.us/v2/users/me/meetings?type=scheduled&page_size=10', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  })
 
-  if (liveMeetings.length > 0) {
-    const meeting = liveMeetings[0]
-    return {
-      id: String(meeting.id),
-      topic: meeting.topic,
-      password: meeting.password
+  if (scheduledResponse.ok) {
+    const scheduledData = await scheduledResponse.json()
+    console.log('Zoom scheduled meetings count:', scheduledData.meetings?.length || 0)
+    
+    // Check each scheduled meeting's status
+    for (const meeting of (scheduledData.meetings || [])) {
+      const statusResponse = await fetch(`https://api.zoom.us/v2/meetings/${meeting.id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json()
+        console.log(`Meeting ${meeting.id} status:`, statusData.status)
+        
+        if (statusData.status === 'started') {
+          return {
+            id: String(meeting.id),
+            topic: meeting.topic,
+            password: meeting.password || statusData.password
+          }
+        }
+      }
     }
   }
 
+  console.log('No live meetings found')
   return null
 }
 
