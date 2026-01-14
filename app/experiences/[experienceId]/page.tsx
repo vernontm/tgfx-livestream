@@ -1,5 +1,6 @@
 import { headers } from 'next/headers'
 import { isAdmin } from '@/lib/admin'
+import { saveWhopUser, getWhopUser as getWhopUserFromDb } from '@/lib/whop-users'
 import ExperienceClient from './ExperienceClient'
 
 interface PageProps {
@@ -73,12 +74,23 @@ export default async function ExperiencePage({ params, searchParams }: PageProps
       userId = payload.sub as string
       console.log('Decoded Whop user ID from token:', userId)
       
-      // Fetch user details from Whop API
-      const whopUser = await getWhopUser(userId)
-      if (whopUser) {
-        whopUsername = whopUser.username
-        email = whopUser.email
-        console.log('Fetched Whop username:', whopUsername)
+      // First try to get from database (cached)
+      const cachedUser = await getWhopUserFromDb(userId)
+      if (cachedUser) {
+        whopUsername = cachedUser.username
+        email = cachedUser.email || ''
+        console.log('Got username from database:', whopUsername)
+      } else {
+        // Fetch user details from Whop API
+        const whopUser = await getWhopUser(userId)
+        if (whopUser) {
+          whopUsername = whopUser.username
+          email = whopUser.email
+          console.log('Fetched Whop username from API:', whopUsername)
+          
+          // Save to database for future use
+          await saveWhopUser(userId, whopUsername, email)
+        }
       }
     }
   }
