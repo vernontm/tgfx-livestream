@@ -25,12 +25,13 @@ function LiveMeetingContent() {
   
   const [isLoading, setIsLoading] = useState(true)
 
-  // For host: open Zoom web client in new tab, for viewers: embed in iframe
+  // For host: open Zoom desktop app, for viewers: embed web client in iframe
   useEffect(() => {
     if (isHost && meetingNumber) {
-      // Open Zoom web client for host to start meeting
-      const hostUrl = `https://zoom.us/wc/${meetingNumber}/start?pwd=${password}`
-      window.open(hostUrl, '_blank')
+      // Open Zoom desktop app for host to start meeting
+      // zoommtg:// protocol launches the desktop app directly
+      const desktopUrl = `zoommtg://zoom.us/start?confno=${meetingNumber}&pwd=${password}&zc=0`
+      window.location.href = desktopUrl
     }
   }, [isHost, meetingNumber, password])
 
@@ -106,9 +107,12 @@ function LiveMeetingContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Zoom Opened in New Tab</h2>
+            <h2 className="text-xl font-bold text-white mb-2">Zoom Desktop App Launching</h2>
             <p className="text-zinc-400 mb-6">
-              Start your livestream in the Zoom window. This page will show your meeting controls.
+              Your Zoom desktop app should open automatically. Start your livestream there. Viewers will join via the web client.
+            </p>
+            <p className="text-zinc-500 text-sm mb-6">
+              If Zoom didn&apos;t open, <a href={`https://zoom.us/j/${meetingNumber}?pwd=${password}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">click here to join manually</a>.
             </p>
             
             <div className="bg-zinc-800 rounded-lg p-4 text-left mb-6">
