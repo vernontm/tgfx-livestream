@@ -21,12 +21,13 @@ function LiveMeetingContent() {
   const meetingNumber = searchParams.get('meetingNumber') || ''
   const password = searchParams.get('password') || ''
   const title = searchParams.get('title') || 'TGFX Livestream'
+  const usernameFromUrl = searchParams.get('username') || ''
   const isHost = searchParams.get('host') === '1'
   
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [sdkReady, setSdkReady] = useState(false)
-  const [displayName, setDisplayName] = useState<string>('Viewer')
+  const [displayName, setDisplayName] = useState<string>(usernameFromUrl || 'Viewer')
   const initStarted = useRef(false)
 
   // Load Zoom SDK and join meeting
@@ -39,20 +40,10 @@ function LiveMeetingContent() {
         setIsLoading(true)
         setError(null)
 
-        // Fetch Whop username first
-        let userName = 'Viewer'
-        try {
-          const userResponse = await fetch('/api/whop/user')
-          if (userResponse.ok) {
-            const userData = await userResponse.json()
-            if (userData.username) {
-              userName = userData.username
-              setDisplayName(userName)
-            }
-          }
-        } catch (err) {
-          console.log('Could not fetch Whop username, using default')
-        }
+        // Use username from URL (passed from experience page which has Whop headers)
+        const userName = usernameFromUrl || 'Viewer'
+        setDisplayName(userName)
+        console.log('Joining as:', userName)
 
         // Dynamically import the Zoom SDK
         const { ZoomMtg } = await import('@zoom/meetingsdk')
@@ -130,7 +121,7 @@ function LiveMeetingContent() {
     }
 
     initZoomSDK()
-  }, [meetingNumber, password])
+  }, [meetingNumber, password, usernameFromUrl])
 
   const handleEndMeeting = async () => {
     if (confirm('Are you sure you want to end this meeting?')) {
