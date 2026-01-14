@@ -1,5 +1,5 @@
 import './globals.css'
-import '@whop/frosted-ui/styles.css'
+import '@whop/frosted-ui/dist/index.css'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
