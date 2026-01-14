@@ -144,7 +144,58 @@ export async function getMeetingStatus(meetingId: string): Promise<'waiting' | '
 export async function getLiveMeetingFromZoom(): Promise<{ id: string; topic: string; password?: string } | null> {
   const accessToken = await getZoomAccessToken()
 
-  // First try to get live meetings directly
+  // Get list of users in the account first
+  const usersResponse = await fetch('https://api.zoom.us/v2/users?status=active&page_size=30', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  if (usersResponse.ok) {
+    const usersData = await usersResponse.json()
+    const users = usersData.users || []
+    console.log('Found', users.length, 'users in account')
+
+    // Check each user for live meetings
+    for (const user of users) {
+      const userLiveResponse = await fetch(`https://api.zoom.us/v2/users/${user.id}/meetings?type=live`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (userLiveResponse.ok) {
+        const userLiveData = await userLiveResponse.json()
+        const liveMeetings = userLiveData.meetings || []
+        
+        if (liveMeetings.length > 0) {
+          const meeting = liveMeetings[0]
+          console.log('Found live meeting from user', user.email, ':', meeting.id)
+          
+          // Extract password from join_url
+          let meetingPassword = meeting.password || ''
+          if (!meetingPassword && meeting.join_url) {
+            const urlMatch = meeting.join_url.match(/[?&]pwd=([^&]+)/)
+            if (urlMatch) {
+              meetingPassword = urlMatch[1]
+            }
+          }
+          
+          return {
+            id: String(meeting.id),
+            topic: meeting.topic,
+            password: meetingPassword
+          }
+        }
+      }
+    }
+  }
+
+  // Fallback: try the original /users/me endpoint
   const liveResponse = await fetch('https://api.zoom.us/v2/users/me/meetings?type=live', {
     method: 'GET',
     headers: {
